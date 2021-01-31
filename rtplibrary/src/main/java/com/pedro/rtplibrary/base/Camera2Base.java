@@ -1,7 +1,9 @@
 package com.pedro.rtplibrary.base;
 
 import android.content.Context;
+import android.hardware.camera2.CameraAccessException;
 import android.hardware.camera2.CameraCharacteristics;
+import android.media.ImageReader;
 import android.media.MediaCodec;
 import android.media.MediaFormat;
 import android.os.Build;
@@ -874,4 +876,13 @@ public abstract class Camera2Base implements GetAacData, GetVideoData, GetMicrop
   }
 
   public abstract void setLogs(boolean enable);
+
+  public void setCaptureImageAvailableListener(ImageReader.OnImageAvailableListener listener) {
+    cameraManager.setCaptureImageAvailableListener(listener);
+  }
+
+  public void capture() throws CameraAccessException {
+    cameraManager.capture();
+  }
+
 }

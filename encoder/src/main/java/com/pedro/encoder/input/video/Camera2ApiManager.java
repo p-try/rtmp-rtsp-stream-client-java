@@ -2,6 +2,7 @@ package com.pedro.encoder.input.video;
 
 import android.annotation.SuppressLint;
 import android.content.Context;
+import android.graphics.ImageFormat;
 import android.graphics.Rect;
 import android.graphics.SurfaceTexture;
 import android.hardware.camera2.CameraAccessException;
@@ -15,6 +16,7 @@ import android.hardware.camera2.CaptureResult;
 import android.hardware.camera2.TotalCaptureResult;
 import android.hardware.camera2.params.Face;
 import android.hardware.camera2.params.StreamConfigurationMap;
+import android.media.ImageReader;
 import android.os.Build;
 import android.os.Handler;
 import android.os.HandlerThread;
@@ -114,17 +116,29 @@ public class Camera2ApiManager extends CameraDevice.StateCallback {
 
   private void startPreview(CameraDevice cameraDevice) {
     try {
-      final List<Surface> listSurfaces = new ArrayList<>();
+      final List<Surface> listPreviewSurfaces = new ArrayList<>();
       Surface preview = addPreviewSurface();
-      if (preview != null) listSurfaces.add(preview);
-      if (surfaceEncoder != preview && surfaceEncoder != null) listSurfaces.add(surfaceEncoder);
+      if (preview != null) listPreviewSurfaces.add(preview);
+      if (surfaceEncoder != preview && surfaceEncoder != null) listPreviewSurfaces.add(surfaceEncoder);
+
+      Rect size = cameraManager.getCameraCharacteristics(cameraDevice.getId()).get(
+              CameraCharacteristics.SENSOR_INFO_ACTIVE_ARRAY_SIZE
+      );
+      captureImageReader = ImageReader.newInstance(
+              size.width(),
+              size.height(),
+              ImageFormat.JPEG,
+              1
+      );
+      final List<Surface> listSurfaces = new ArrayList<>(listPreviewSurfaces);
+      listSurfaces.add(captureImageReader.getSurface());
 
       cameraDevice.createCaptureSession(listSurfaces, new CameraCaptureSession.StateCallback() {
         @Override
         public void onConfigured(@NonNull CameraCaptureSession cameraCaptureSession) {
           Camera2ApiManager.this.cameraCaptureSession = cameraCaptureSession;
           try {
-            CaptureRequest captureRequest = drawSurface(listSurfaces);
+            CaptureRequest captureRequest = drawSurface(listPreviewSurfaces);
             if (captureRequest != null) {
               cameraCaptureSession.setRepeatingRequest(captureRequest,
                   faceDetectionEnabled ? cb : null, cameraHandler);
@@ -679,4 +693,22 @@ public class Camera2ApiManager extends CameraDevice.StateCallback {
     return facing == CameraHelper.Facing.BACK ? CameraMetadata.LENS_FACING_BACK
         : CameraMetadata.LENS_FACING_FRONT;
   }
+
+  private ImageReader captureImageReader;
+  private ImageReader.OnImageAvailableListener captureImageAvailableListener;
+  public void setCaptureImageAvailableListener(ImageReader.OnImageAvailableListener captureImageAvailableListener) {
+    this.captureImageAvailableListener = captureImageAvailableListener;
+  }
+  public void capture() {
+    try {
+      captureImageReader.setOnImageAvailableListener(captureImageAvailableListener, cameraHandler);
+      CaptureRequest.Builder captureRequest = cameraDevice.createCaptureRequest(CameraDevice.TEMPLATE_STILL_CAPTURE);
+      captureRequest.addTarget(captureImageReader.getSurface());
+      cameraCaptureSession.capture(captureRequest.build(), new CameraCaptureSession.CaptureCallback() {
+      }, cameraHandler);
+    } catch (Exception e) {
+      Log.e(TAG, "Capture failed: " + e);
+    }
+  }
+
 }
