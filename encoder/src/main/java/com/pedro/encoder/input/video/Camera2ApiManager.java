@@ -2,7 +2,6 @@ package com.pedro.encoder.input.video;
 
 import android.annotation.SuppressLint;
 import android.content.Context;
-import android.graphics.ImageFormat;
 import android.graphics.Rect;
 import android.graphics.SurfaceTexture;
 import android.hardware.camera2.CameraAccessException;
@@ -16,7 +15,6 @@ import android.hardware.camera2.CaptureResult;
 import android.hardware.camera2.TotalCaptureResult;
 import android.hardware.camera2.params.Face;
 import android.hardware.camera2.params.StreamConfigurationMap;
-import android.media.ImageReader;
 import android.os.Build;
 import android.os.Handler;
 import android.os.HandlerThread;
@@ -26,20 +24,19 @@ import android.view.MotionEvent;
 import android.view.Surface;
 import android.view.SurfaceView;
 import android.view.TextureView;
+
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 import androidx.annotation.RequiresApi;
 
-import java.lang.reflect.Array;
 import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
 import java.util.concurrent.Semaphore;
 
 import static android.hardware.camera2.CameraMetadata.LENS_FACING_FRONT;
-import static com.pedro.encoder.input.video.CameraHelper.*;
+import static com.pedro.encoder.input.video.CameraHelper.Facing;
+import static com.pedro.encoder.input.video.CameraHelper.getFingerSpacing;
 
 /**
  * Created by pedro on 4/03/17.
@@ -125,25 +122,10 @@ public class Camera2ApiManager extends CameraDevice.StateCallback {
       if (preview != null) listPreviewSurfaces.add(preview);
       if (surfaceEncoder != preview && surfaceEncoder != null) listPreviewSurfaces.add(surfaceEncoder);
 
-      // get the size that is closest to the desired capture size
-      Size[] sizes = cameraManager.getCameraCharacteristics(cameraDevice.getId()).get(CameraCharacteristics.SCALER_STREAM_CONFIGURATION_MAP).getOutputSizes(ImageFormat.JPEG);
-      Size size = sizes[0];
-      for (Size size1 : sizes) {
-        if (Math.abs((size1.getWidth() * size1.getHeight()) - captureSizeApprox)
-                < Math.abs((size.getHeight() * size.getWidth()) - captureSizeApprox)
-        ) {
-          size = size1;
-        }
-      }
-
-      captureImageReader = ImageReader.newInstance(
-              size.getWidth(),
-              size.getHeight(),
-              ImageFormat.JPEG,
-              1
-      );
       final List<Surface> listSurfaces = new ArrayList<>(listPreviewSurfaces);
-      listSurfaces.add(captureImageReader.getSurface());
+      if (additionalSurfaces != null) {
+        listSurfaces.addAll(additionalSurfaces);
+      }
 
       cameraDevice.createCaptureSession(listSurfaces, new CameraCaptureSession.StateCallback() {
         @Override
@@ -706,25 +688,19 @@ public class Camera2ApiManager extends CameraDevice.StateCallback {
         : CameraMetadata.LENS_FACING_FRONT;
   }
 
-  private ImageReader captureImageReader;
-  private ImageReader.OnImageAvailableListener captureImageAvailableListener;
-  public void setCaptureImageAvailableListener(ImageReader.OnImageAvailableListener captureImageAvailableListener) {
-    this.captureImageAvailableListener = captureImageAvailableListener;
+
+  private List<Surface> additionalSurfaces = null;
+  public void setAdditionalSurfaces(List<Surface> additionalSurfaces) {
+    this.additionalSurfaces = additionalSurfaces;
   }
-  public void capture() {
-    try {
-      captureImageReader.setOnImageAvailableListener(captureImageAvailableListener, cameraHandler);
-      CaptureRequest.Builder captureRequest = cameraDevice.createCaptureRequest(CameraDevice.TEMPLATE_STILL_CAPTURE);
-      captureRequest.addTarget(captureImageReader.getSurface());
-      cameraCaptureSession.capture(captureRequest.build(), new CameraCaptureSession.CaptureCallback() {
-      }, cameraHandler);
-    } catch (Exception e) {
-      Log.e(TAG, "Capture failed: " + e);
-    }
+  public CameraDevice getCameraDevice() {
+    return cameraDevice;
   }
-  private int captureSizeApprox = Integer.MAX_VALUE;
-  public void setCaptureSizeApprox(int captureSizeApprox) {
-    this.captureSizeApprox = captureSizeApprox;
+  public CameraCaptureSession getCameraCaptureSession() {
+    return cameraCaptureSession;
+  }
+  public Handler getCameraHandler() {
+    return cameraHandler;
   }
 
 }
