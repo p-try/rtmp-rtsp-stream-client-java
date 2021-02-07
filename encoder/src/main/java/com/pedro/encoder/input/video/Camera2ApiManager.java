@@ -31,6 +31,7 @@ import androidx.annotation.RequiresApi;
 
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.LinkedList;
 import java.util.List;
 import java.util.concurrent.Semaphore;
 
@@ -116,6 +117,9 @@ public class Camera2ApiManager extends CameraDevice.StateCallback {
   }
 
   private void startPreview(CameraDevice cameraDevice) {
+    for (Runnable r : previewStartingListeners) {
+      r.run();
+    }
     try {
       final List<Surface> listPreviewSurfaces = new ArrayList<>();
       Surface preview = addPreviewSurface();
@@ -701,6 +705,10 @@ public class Camera2ApiManager extends CameraDevice.StateCallback {
   }
   public Handler getCameraHandler() {
     return cameraHandler;
+  }
+  private final List<Runnable> previewStartingListeners = new LinkedList<>();
+  public void addPreviewStartingListener(Runnable r) {
+    this.previewStartingListeners.add(r);
   }
 
 }
