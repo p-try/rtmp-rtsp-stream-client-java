@@ -129,7 +129,9 @@ public class Camera2ApiManager extends CameraDevice.StateCallback {
       Size[] sizes = cameraManager.getCameraCharacteristics(cameraDevice.getId()).get(CameraCharacteristics.SCALER_STREAM_CONFIGURATION_MAP).getOutputSizes(ImageFormat.JPEG);
       Size size = sizes[0];
       for (Size size1 : sizes) {
-        if ((size1.getWidth() * size1.getHeight()) - captureSizeApprox < (size.getHeight() * size.getWidth()) - captureSizeApprox) {
+        if (Math.abs((size1.getWidth() * size1.getHeight()) - captureSizeApprox)
+                < Math.abs((size.getHeight() * size.getWidth()) - captureSizeApprox)
+        ) {
           size = size1;
         }
       }
