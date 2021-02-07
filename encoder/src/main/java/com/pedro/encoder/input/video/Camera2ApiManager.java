@@ -29,7 +29,11 @@ import android.view.TextureView;
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 import androidx.annotation.RequiresApi;
+
+import java.lang.reflect.Array;
 import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
 import java.util.concurrent.Semaphore;
@@ -121,12 +125,18 @@ public class Camera2ApiManager extends CameraDevice.StateCallback {
       if (preview != null) listPreviewSurfaces.add(preview);
       if (surfaceEncoder != preview && surfaceEncoder != null) listPreviewSurfaces.add(surfaceEncoder);
 
-      Rect size = cameraManager.getCameraCharacteristics(cameraDevice.getId()).get(
-              CameraCharacteristics.SENSOR_INFO_ACTIVE_ARRAY_SIZE
-      );
+      // get the size that is closest to the desired capture size
+      Size[] sizes = cameraManager.getCameraCharacteristics(cameraDevice.getId()).get(CameraCharacteristics.SCALER_STREAM_CONFIGURATION_MAP).getOutputSizes(ImageFormat.JPEG);
+      Size size = sizes[0];
+      for (Size size1 : sizes) {
+        if ((size1.getWidth() * size1.getHeight()) - captureSizeApprox < (size.getHeight() * size.getWidth()) - captureSizeApprox) {
+          size = size1;
+        }
+      }
+
       captureImageReader = ImageReader.newInstance(
-              size.width(),
-              size.height(),
+              size.getWidth(),
+              size.getHeight(),
               ImageFormat.JPEG,
               1
       );
@@ -709,6 +719,10 @@ public class Camera2ApiManager extends CameraDevice.StateCallback {
     } catch (Exception e) {
       Log.e(TAG, "Capture failed: " + e);
     }
+  }
+  private int captureSizeApprox = Integer.MAX_VALUE;
+  public void setCaptureSizeApprox(int captureSizeApprox) {
+    this.captureSizeApprox = captureSizeApprox;
   }
 
 }

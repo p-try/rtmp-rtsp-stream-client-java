@@ -881,6 +881,10 @@ public abstract class Camera2Base implements GetAacData, GetVideoData, GetMicrop
     cameraManager.setCaptureImageAvailableListener(listener);
   }
 
+  public void setCaptureSizeApprox(int captureSizeApprox) {
+    cameraManager.setCaptureSizeApprox(captureSizeApprox);
+  }
+
   public void capture() throws CameraAccessException {
     cameraManager.capture();
   }

@@ -10,9 +10,12 @@ import android.view.WindowManager;
 import android.widget.Button;
 import android.widget.EditText;
 import android.widget.Toast;
+
+import androidx.annotation.RequiresApi;
 import androidx.appcompat.app.AppCompatActivity;
 import com.pedro.encoder.input.video.CameraOpenException;
 import com.pedro.rtplibrary.rtsp.RtspCamera1;
+import com.pedro.rtplibrary.rtsp.RtspCamera2;
 import com.pedro.rtpstreamer.R;
 import com.pedro.rtsp.utils.ConnectCheckerRtsp;
 import java.io.File;
@@ -26,10 +29,11 @@ import java.util.Locale;
  * {@link com.pedro.rtplibrary.base.Camera1Base}
  * {@link com.pedro.rtplibrary.rtsp.RtspCamera1}
  */
+@RequiresApi(api = Build.VERSION_CODES.LOLLIPOP)
 public class ExampleRtspActivity extends AppCompatActivity
     implements ConnectCheckerRtsp, View.OnClickListener, SurfaceHolder.Callback {
 
-  private RtspCamera1 rtspCamera1;
+  private RtspCamera2 rtspCamera1;
   private Button button;
   private Button bRecord;
   private EditText etUrl;
@@ -52,7 +56,7 @@ public class ExampleRtspActivity extends AppCompatActivity
     switchCamera.setOnClickListener(this);
     etUrl = findViewById(R.id.et_rtp_url);
     etUrl.setHint(R.string.hint_rtsp);
-    rtspCamera1 = new RtspCamera1(surfaceView, this);
+    rtspCamera1 = new RtspCamera2(surfaceView, this);
     rtspCamera1.setReTries(10);
     surfaceView.getHolder().addCallback(this);
   }
